@@ -64,16 +64,30 @@ export default class GokiteNetwork {
 		validUntil: 0,
 		validAfter: 0
 	}) {
-		this.ensureSmartAccount();
-		const address = await this.smartAccount.getAddress();
-		const sessionKData = await this.smartAccount.createSessions([{
-			...options,
-			sessionValidationModule: "0x8E09744b738e9Fec4A4df7Ab5621f1857F6Fa175",
-			sessionKeyDataInAbi: [["address", "uint256"], [address, 1]]
-		}]);
-		await this.smartAccount.sendTransaction({ tx: sessionKData.transactions });
-		localStorage.setItem(`pn_auth_user_session_${this.config.appId}`, JSON.stringify(sessionKData));
-		return sessionKData;
+		let data;
+		try {
+			data = JSON.parse(localStorage.getItem(`pn_auth_user_session_${this.config.appId}`) || "");
+			if (data) {
+				return data.sessionKey;
+			}
+			this.ensureSmartAccount();
+			const address = await this.smartAccount.getAddress();
+			const sessionKData = await this.smartAccount.createSessions([{
+				...options,
+				sessionValidationModule: "0x8E09744b738e9Fec4A4df7Ab5621f1857F6Fa175",
+				sessionKeyDataInAbi: [["address", "uint256"], [address, 1]]
+			}]);
+			await this.smartAccount.sendTransaction({ tx: sessionKData.transactions });
+			data = {
+				privateKey: this.signer.privateKey,
+				sessionKey: sessionKData
+			};
+			localStorage.setItem(`pn_auth_user_session_${this.config.appId}`, JSON.stringify(data));
+			return sessionKData;
+		} catch (err) {
+			console.error(err);
+			return null;
+		}
 	}
 	async sendUserOp(smartAddress, sessionData) {
 		this.ensureSmartAccount();

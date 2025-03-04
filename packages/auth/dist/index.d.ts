@@ -22,6 +22,6 @@ export default class GokiteNetwork {
 	createSession(options?: {
 		validUntil: number;
 		validAfter: number;
-	}): Promise<FeeQuotesResponse>;
+	}): Promise<FeeQuotesResponse | null>;
 	sendUserOp(smartAddress: string, sessionData: FeeQuotesResponse): Promise<string>;
 }
