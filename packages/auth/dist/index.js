@@ -1,22 +1,29 @@
+"use client";
 import { ParticleNetwork } from "@particle-network/auth";
 import { ParticleProvider } from "@particle-network/provider";
 import { SmartAccount, AAWrapProvider, SendTransactionMode } from "@particle-network/aa";
-import { ethers, Wallet, Interface, getBytes } from "ethers";
+import { ethers, Wallet } from "ethers";
+import { Deferred } from "./deferred";
+import { encrypt } from "./aes";
+const getCookie = (name) => {
+	return window.document.cookie.match(`[;\s+]?${name}=([^;]*)`)?.pop();
+};
 export default class GokiteNetwork {
 	smartAccount;
 	etherProvider;
-	signer;
 	auth;
+	deferred;
 	constructor(config, erc4337 = {
 		name: "BICONOMY",
 		version: "2.0.0"
-	}) {
+	}, signInRpc) {
 		this.config = config;
 		this.erc4337 = erc4337;
+		this.signInRpc = signInRpc;
 		const particle = new ParticleNetwork(config);
 		particle.setERC4337(this.erc4337);
 		this.auth = particle.auth;
-		this.signer = Wallet.createRandom();
+		this.deferred = new Deferred();
 	}
 	ensureSmartAccount(smartAccount) {
 		if (!this.smartAccount) {
@@ -31,6 +38,44 @@ export default class GokiteNetwork {
 		if (!this.etherProvider) {
 			this.etherProvider = new ethers.BrowserProvider(new AAWrapProvider(this.smartAccount, SendTransactionMode.Gasless), "any");
 		}
+		if (!this.deferred.fullfilled) {
+			try {
+				if (this.signInRpc) {
+					const eoa = this.user?.wallets[0].public_address;
+					this.signin({ eoa });
+				} else {
+					const accessToken = getCookie("access_token");
+					if (accessToken) {
+						this.deferred.resolve(accessToken);
+					}
+				}
+			} catch (err) {
+				console.error(err);
+			}
+		}
+	}
+	ready(fn) {
+		this.deferred.promise.then(fn);
+	}
+	async signin(payload) {
+		fetch(this.signInRpc, {
+			method: "POST",
+			mode: "cors",
+			credentials: "include",
+			headers: { Authorization: await encrypt(payload.eoa, "6a1c35292b7c5b769ff47d89a17e7bc4f0adfe1b462981d28e0e9f7ff20b8f8a") },
+			body: JSON.stringify(payload)
+		}).then((res) => {
+			if (res.ok) {
+				return res.json();
+			} else {
+				res.status === 422;
+			}
+			{
+				this.createSession();
+			}
+		}).then((ret) => {
+			this.deferred.resolve(ret.accessToken);
+		});
 	}
 	set user(userInfo) {
 		if (!this.auth.isLogin()) {
@@ -64,56 +109,36 @@ export default class GokiteNetwork {
 		validUntil: 0,
 		validAfter: 0
 	}) {
-		let data;
 		try {
-			data = JSON.parse(localStorage.getItem(`pn_auth_user_session_${this.config.appId}`) || "");
-			if (data) {
-				return data.sessionKey;
-			}
 			this.ensureSmartAccount();
+			if (this.deferred.fullfilled) {
+				return;
+			}
 			const address = await this.smartAccount.getAddress();
-			const sessionKData = await this.smartAccount.createSessions([{
+			const sessionKey = await this.smartAccount.createSessions([{
 				...options,
 				sessionValidationModule: "0x8E09744b738e9Fec4A4df7Ab5621f1857F6Fa175",
 				sessionKeyDataInAbi: [["address", "uint256"], [address, 1]]
 			}]);
-			await this.smartAccount.sendTransaction({ tx: sessionKData.transactions });
-			data = {
-				privateKey: this.signer.privateKey,
-				sessionKey: sessionKData
+			await this.smartAccount.sendTransaction({ tx: sessionKey.transactions });
+			const signer = Wallet.createRandom();
+			const data = {
+				privateKey: signer.privateKey,
+				sessionKey
 			};
-			localStorage.setItem(`pn_auth_user_session_${this.config.appId}`, JSON.stringify(data));
-			return sessionKData;
+			const eoa = this.user?.wallets[0].public_address;
+			if (this.signInRpc) {
+				await this.signin({
+					eoa,
+					aa_address: address,
+					session_data: data
+				});
+			} else {
+				localStorage.setItem(`pn_auth_user_session_${this.config.appId}`, JSON.stringify(data));
+			}
+			return data;
 		} catch (err) {
 			console.error(err);
-			return null;
 		}
-	}
-	async sendUserOp(smartAddress, sessionData) {
-		this.ensureSmartAccount();
-		const walletNew = new Wallet(this.signer.privateKey);
-		const address = await this.smartAccount.getAddress();
-		const mintInterface = new Interface(["function mintTo(address, uint256, uint256) public"]);
-		const encodedData = mintInterface.encodeFunctionData("mintTo", [
-			address,
-			1,
-			1
-		]);
-		const tx = {
-			to: smartAddress,
-			value: "0x0",
-			data: encodedData
-		};
-		const userOp = await this.smartAccount.buildUserOperation({ tx });
-		const signature = await walletNew.signMessage(getBytes(userOp.userOpHash));
-		const sessions = sessionData.sessions;
-		const hash = await this.smartAccount.sendSignedUserOperation({
-			...userOp.userOp,
-			signature
-		}, {
-			targetSession: sessions[0],
-			sessions
-		});
-		return hash;
 	}
 }
