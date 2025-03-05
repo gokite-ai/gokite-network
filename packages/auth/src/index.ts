@@ -90,22 +90,23 @@ export default class GokiteNetwork {
   }
 
   public ready(fn: (accessToken: string) => void): void {
-    this.deferred.promise.then(fn)
+    this.deferred.promise.then(fn);
   }
 
   public async signin(payload: {
     eoa: string;
     aa_address?: string;
     session_data?: {
-        privateKey: string;
-        sessionKey: FeeQuotesResponse
-    }
+      privateKey: string;
+      sessionKey: FeeQuotesResponse;
+    };
   }): Promise<void> {
     fetch(this.signInRpc!, {
       method: "POST",
       mode: "cors",
       credentials: "include",
       headers: {
+        "Content-Type": "application/json",
         Authorization: await encrypt(
           payload.eoa,
           "6a1c35292b7c5b769ff47d89a17e7bc4f0adfe1b462981d28e0e9f7ff20b8f8a"
@@ -116,15 +117,12 @@ export default class GokiteNetwork {
       .then((res) => {
         if (res.ok) {
           return res.json();
-        } else {
-          res.status === 422;
-        }
-        {
+        } else if (res.status === 422) {
           this.createSession();
         }
       })
       .then((ret: any) => {
-        this.deferred.resolve(ret.accessToken);
+        this.deferred.resolve(ret.data.access_token);
       });
   }
 
@@ -175,9 +173,18 @@ export default class GokiteNetwork {
     { sessionKey: FeeQuotesResponse; privateKey: string } | undefined
   > {
     try {
-      this.ensureSmartAccount();
-      if (this.deferred.fullfilled) {
-        return;
+      if (this.signInRpc) {
+        if (this.deferred.fullfilled) {
+          return;
+        }
+      } else {
+        const data = JSON.parse(
+          localStorage.getItem(`pn_auth_user_session_${this.config.appId}`) ||
+            "null"
+        );
+        if (data) {
+          return data;
+        }
       }
 
       const address = await this.smartAccount!.getAddress();
@@ -205,7 +212,11 @@ export default class GokiteNetwork {
       };
       const eoa = this.user?.wallets[0].public_address;
       if (this.signInRpc) {
-        await this.signin({ eoa: eoa!, aa_address: address, session_data: data });
+        await this.signin({
+          eoa: eoa!,
+          aa_address: address,
+          session_data: data,
+        });
       } else {
         localStorage.setItem(
           `pn_auth_user_session_${this.config.appId}`,
