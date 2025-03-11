@@ -15,7 +15,13 @@ export default class GokiteNetwork {
 		version: string;
 	}, signInRpc?: string);
 	ensureSmartAccount(smartAccount?: SmartAccount): void;
-	ready(fn: (accessToken: string) => void): void;
+	ready(fn: (data: {
+		access_token: string;
+		session_data: {
+			privateKey: string;
+			sessionKey: FeeQuotesResponse;
+		};
+	}) => void): void;
 	signin(payload: {
 		eoa: string;
 		aa_address?: string;

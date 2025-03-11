@@ -19,17 +19,17 @@ import { Deferred } from "./deferred";
 import { encrypt } from "./aes";
 export type { UserInfo } from "@particle-network/auth";
 
-declare const window: any;
-
-const getCookie = (name: string) => {
-  return window.document.cookie.match(`[;\s+]?${name}=([^;]*)`)?.pop();
-};
-
 export default class GokiteNetwork {
   private smartAccount?: SmartAccount;
   private etherProvider?: ethers.BrowserProvider;
   private auth: Auth;
-  private deferred: Deferred<string>;
+  private deferred: Deferred<{
+    access_token: string;
+    session_data: {
+      privateKey: string;
+      sessionKey: FeeQuotesResponse;
+    };
+  }>;
 
   constructor(
     private config: Config,
@@ -78,9 +78,13 @@ export default class GokiteNetwork {
           const eoa = this.user?.wallets[0].public_address;
           this.signin({ eoa: eoa! });
         } else {
-          const accessToken = getCookie("access_token");
-          if (accessToken) {
-            this.deferred.resolve(accessToken);
+          const data = JSON.parse(
+            localStorage.getItem(`pn_auth_user_session_${this.config.appId}`) ||
+              "null"
+          );
+
+          if (data) {
+            this.deferred.resolve(data);
           }
         }
       } catch (err) {
@@ -89,7 +93,15 @@ export default class GokiteNetwork {
     }
   }
 
-  public ready(fn: (accessToken: string) => void): void {
+  public ready(
+    fn: (data: {
+      access_token: string;
+      session_data: {
+        privateKey: string;
+        sessionKey: FeeQuotesResponse;
+      };
+    }) => void
+  ): void {
     this.deferred.promise.then(fn);
   }
 
@@ -122,7 +134,15 @@ export default class GokiteNetwork {
         }
       })
       .then((ret: any) => {
-        this.deferred.resolve(ret.data.access_token);
+        try {
+          localStorage.setItem(
+            `pn_auth_user_session_${this.config.appId}`,
+            JSON.stringify(ret.data)
+          );
+        } catch (e) {
+          console.error(e);
+        }
+        this.deferred.resolve(ret.data);
       });
   }
 
@@ -175,7 +195,7 @@ export default class GokiteNetwork {
     try {
       if (this.signInRpc) {
         if (this.deferred.fullfilled) {
-          return;
+          return this.deferred.promise.then((data) => data.session_data);
         }
       } else {
         const data = JSON.parse(
@@ -220,7 +240,9 @@ export default class GokiteNetwork {
       } else {
         localStorage.setItem(
           `pn_auth_user_session_${this.config.appId}`,
-          JSON.stringify(data)
+          JSON.stringify({
+            session_data: data
+          })
         );
       }
 

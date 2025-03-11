@@ -5,9 +5,6 @@ import { SmartAccount, AAWrapProvider, SendTransactionMode } from "@particle-net
 import { ethers, Wallet } from "ethers";
 import { Deferred } from "./deferred";
 import { encrypt } from "./aes";
-const getCookie = (name) => {
-	return window.document.cookie.match(`[;\s+]?${name}=([^;]*)`)?.pop();
-};
 export default class GokiteNetwork {
 	smartAccount;
 	etherProvider;
@@ -44,9 +41,9 @@ export default class GokiteNetwork {
 					const eoa = this.user?.wallets[0].public_address;
 					this.signin({ eoa });
 				} else {
-					const accessToken = getCookie("access_token");
-					if (accessToken) {
-						this.deferred.resolve(accessToken);
+					const data = JSON.parse(localStorage.getItem(`pn_auth_user_session_${this.config.appId}`) || "null");
+					if (data) {
+						this.deferred.resolve(data);
 					}
 				}
 			} catch (err) {
@@ -74,7 +71,12 @@ export default class GokiteNetwork {
 				this.createSession();
 			}
 		}).then((ret) => {
-			this.deferred.resolve(ret.data.access_token);
+			try {
+				localStorage.setItem(`pn_auth_user_session_${this.config.appId}`, JSON.stringify(ret.data));
+			} catch (e) {
+				console.error(e);
+			}
+			this.deferred.resolve(ret.data);
 		});
 	}
 	set user(userInfo) {
@@ -112,7 +114,7 @@ export default class GokiteNetwork {
 		try {
 			if (this.signInRpc) {
 				if (this.deferred.fullfilled) {
-					return;
+					return this.deferred.promise.then((data) => data.session_data);
 				}
 			} else {
 				const data = JSON.parse(localStorage.getItem(`pn_auth_user_session_${this.config.appId}`) || "null");
@@ -140,7 +142,7 @@ export default class GokiteNetwork {
 					session_data: data
 				});
 			} else {
-				localStorage.setItem(`pn_auth_user_session_${this.config.appId}`, JSON.stringify(data));
+				localStorage.setItem(`pn_auth_user_session_${this.config.appId}`, JSON.stringify({ session_data: data }));
 			}
 			return data;
 		} catch (err) {
