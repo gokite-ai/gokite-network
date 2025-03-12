@@ -147,14 +147,12 @@ export default class GokiteNetwork {
   }
 
   public set user(userInfo: UserInfo) {
-    if (!this.auth.isLogin()) {
-      try {
-        localStorage.setItem(
-          `pn_auth_user_info_${this.config.appId}`,
-          JSON.stringify(userInfo)
-        );
-      } catch (e) {}
-    }
+    try {
+      localStorage.setItem(
+        `pn_auth_user_info_${this.config.appId}`,
+        JSON.stringify(userInfo)
+      );
+    } catch (e) {}
   }
 
   public get user(): UserInfo | null {
@@ -241,7 +239,7 @@ export default class GokiteNetwork {
         localStorage.setItem(
           `pn_auth_user_session_${this.config.appId}`,
           JSON.stringify({
-            session_data: data
+            session_data: data,
           })
         );
       }

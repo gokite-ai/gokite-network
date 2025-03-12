@@ -80,11 +80,9 @@ export default class GokiteNetwork {
 		});
 	}
 	set user(userInfo) {
-		if (!this.auth.isLogin()) {
-			try {
-				localStorage.setItem(`pn_auth_user_info_${this.config.appId}`, JSON.stringify(userInfo));
-			} catch (e) {}
-		}
+		try {
+			localStorage.setItem(`pn_auth_user_info_${this.config.appId}`, JSON.stringify(userInfo));
+		} catch (e) {}
 	}
 	get user() {
 		return this.auth.getUserInfo();
