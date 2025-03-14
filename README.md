@@ -5,6 +5,11 @@
 1. install nodejs > 20
 2. `npm install -g bun`
 
+## configuration
+
+1. create .env.local
+2. config env variables
+
 ## development
 
 1. bun install
