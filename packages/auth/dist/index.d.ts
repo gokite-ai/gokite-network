@@ -2,6 +2,14 @@ import type { Config, LoginOptions, UserInfo } from "@particle-network/auth";
 import { SmartAccount } from "@particle-network/aa";
 import type { FeeQuotesResponse } from "@particle-network/aa";
 export type { UserInfo } from "@particle-network/auth";
+interface IdentifyState {
+	access_token: string;
+	session_data: {
+		privateKey: string;
+		sessionKey: FeeQuotesResponse;
+	};
+	[K: string]: any;
+}
 export default class GokiteNetwork {
 	private config;
 	private erc4337;
@@ -30,6 +38,7 @@ export default class GokiteNetwork {
 			sessionKey: FeeQuotesResponse;
 		};
 	}): Promise<void>;
+	updateIdentify(data: IdentifyState);
 	set user(userInfo: UserInfo | null);
 	get user(): UserInfo | null;
 	login(options?: LoginOptions): Promise<UserInfo | null>;
@@ -42,4 +51,5 @@ export default class GokiteNetwork {
 		sessionKey: FeeQuotesResponse;
 		privateKey: string;
 	} | undefined>;
+	sendUserOp(smartAddress: string, value: string): Promise<string | undefined>;
 }

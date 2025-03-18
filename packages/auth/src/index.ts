@@ -19,17 +19,19 @@ import { Deferred } from "./deferred";
 import { encrypt } from "./aes";
 export type { UserInfo } from "@particle-network/auth";
 
+interface IdentifyState {
+  access_token: string;
+  session_data: {
+    privateKey: string;
+    sessionKey: FeeQuotesResponse;
+  };
+  [K: string]: any;
+}
 export default class GokiteNetwork {
   private smartAccount?: SmartAccount;
   private etherProvider?: ethers.BrowserProvider;
   private auth: Auth;
-  private deferred: Deferred<{
-    access_token: string;
-    session_data: {
-      privateKey: string;
-      sessionKey: FeeQuotesResponse;
-    };
-  }>;
+  private deferred: Deferred<IdentifyState>;
 
   constructor(
     private config: Config,
@@ -134,16 +136,20 @@ export default class GokiteNetwork {
         }
       })
       .then((ret: any) => {
-        try {
-          localStorage.setItem(
-            `pn_auth_user_session_${this.config.appId}`,
-            JSON.stringify(ret.data)
-          );
-        } catch (e) {
-          console.error(e);
-        }
-        this.deferred.resolve(ret.data);
+        this.updateIdentify(ret.data);
       });
+  }
+
+  public updateIdentify(data: IdentifyState) {
+    try {
+      localStorage.setItem(
+        `pn_auth_user_session_${this.config.appId}`,
+        JSON.stringify(data)
+      );
+    } catch (e) {
+      console.error(e);
+    }
+    this.deferred.resolve(data);
   }
 
   public set user(userInfo: UserInfo) {
@@ -218,9 +224,9 @@ export default class GokiteNetwork {
         },
       ]);
 
-      await this.smartAccount!.sendTransaction({
-        tx: sessionKey.transactions as any,
-      });
+      // await this.smartAccount!.sendTransaction({
+      //   tx: sessionKey.transactions as any,
+      // });
 
       const signer = Wallet.createRandom();
 
@@ -250,40 +256,61 @@ export default class GokiteNetwork {
     }
   }
 
-  //   public async sendUserOp(smartAddress: string): Promise<string> {
-  //     if (!this.sessionData) {
-  //       await this.createSession();
-  //     }
-  //     const address = await this.smartAccount!.getAddress();
+  public async sendUserOp(
+    smartAddress: string,
+    value: string
+  ): Promise<string | undefined> {
+    let data!: IdentifyState;
 
-  //     const mintInterface = new Interface([
-  //       "function mintTo(address, uint256, uint256) public",
-  //     ]);
-  //     const encodedData = mintInterface.encodeFunctionData("mintTo", [
-  //       address,
-  //       1,
-  //       1,
-  //     ]);
+    if (this.signInRpc) {
+      if (this.deferred.fullfilled) {
+        data = await this.deferred.promise;
+      }
+    } else {
+      data = JSON.parse(
+        localStorage.getItem(`pn_auth_user_session_${this.config.appId}`) ||
+          "null"
+      );
+    }
+    // await this.smartAccount!.sendTransaction({
+    //   tx: sessionKey.transactions as any,
+    // });
 
-  //     const tx = {
-  //       to: smartAddress,
-  //       value: "0x0",
-  //       data: encodedData,
-  //     };
+    if (data) {
+      const address = await this.smartAccount!.getAddress();
 
-  //     const userOp = await this.smartAccount!.buildUserOperation({ tx });
-  //     const walletNew = new Wallet(this.sessionData!.privateKey);
-  //     const signature = await walletNew.signMessage(getBytes(userOp.userOpHash));
+      const mintInterface = new Interface([
+        "function mintTo(address, uint256, uint256) public",
+      ]);
+      const encodedData = mintInterface.encodeFunctionData("mintTo", [
+        address,
+        1,
+        1,
+      ]);
 
-  //     const sessions = this.sessionData?.sessionKey.sessions!;
-  //     const hash = await this.smartAccount!.sendSignedUserOperation(
-  //       { ...userOp.userOp, signature },
-  //       {
-  //         targetSession: sessions[0],
-  //         sessions: sessions,
-  //       }
-  //     );
+      const tx = {
+        to: smartAddress,
+        value,
+        data: encodedData,
+      };
 
-  //     return hash;
-  //   }
+      const userOp = await this.smartAccount!.buildUserOperation({ tx });
+      const walletNew = new Wallet(data.session_data.privateKey);
+      const signature = await walletNew.signMessage(
+        getBytes(userOp.userOpHash)
+      );
+
+      const sessions = data.session_data.sessionKey.sessions!;
+      const hash = await this.smartAccount!.sendSignedUserOperation(
+        { ...userOp.userOp, signature },
+        {
+          targetSession: sessions[0],
+          sessions: sessions,
+        }
+      );
+
+      return hash;
+    }
+    return undefined;
+  }
 }

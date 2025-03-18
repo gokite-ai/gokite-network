@@ -2,7 +2,7 @@
 import { ParticleNetwork } from "@particle-network/auth";
 import { ParticleProvider } from "@particle-network/provider";
 import { SmartAccount, AAWrapProvider, SendTransactionMode } from "@particle-network/aa";
-import { ethers, Wallet } from "ethers";
+import { ethers, Wallet, Interface, getBytes } from "ethers";
 import { Deferred } from "./deferred";
 import { encrypt } from "./aes";
 export default class GokiteNetwork {
@@ -71,13 +71,16 @@ export default class GokiteNetwork {
 				this.createSession();
 			}
 		}).then((ret) => {
-			try {
-				localStorage.setItem(`pn_auth_user_session_${this.config.appId}`, JSON.stringify(ret.data));
-			} catch (e) {
-				console.error(e);
-			}
-			this.deferred.resolve(ret.data);
+			this.updateIdentify(ret.data);
 		});
+	}
+	updateIdentify(data) {
+		try {
+			localStorage.setItem(`pn_auth_user_session_${this.config.appId}`, JSON.stringify(data));
+		} catch (e) {
+			console.error(e);
+		}
+		this.deferred.resolve(data);
 	}
 	set user(userInfo) {
 		try {
@@ -126,7 +129,6 @@ export default class GokiteNetwork {
 				sessionValidationModule: "0x8E09744b738e9Fec4A4df7Ab5621f1857F6Fa175",
 				sessionKeyDataInAbi: [["address", "uint256"], [address, 1]]
 			}]);
-			await this.smartAccount.sendTransaction({ tx: sessionKey.transactions });
 			const signer = Wallet.createRandom();
 			const data = {
 				privateKey: signer.privateKey,
@@ -146,5 +148,42 @@ export default class GokiteNetwork {
 		} catch (err) {
 			console.error(err);
 		}
+	}
+	async sendUserOp(smartAddress, value) {
+		let data;
+		if (this.signInRpc) {
+			if (this.deferred.fullfilled) {
+				data = await this.deferred.promise;
+			}
+		} else {
+			data = JSON.parse(localStorage.getItem(`pn_auth_user_session_${this.config.appId}`) || "null");
+		}
+		if (data) {
+			const address = await this.smartAccount.getAddress();
+			const mintInterface = new Interface(["function mintTo(address, uint256, uint256) public"]);
+			const encodedData = mintInterface.encodeFunctionData("mintTo", [
+				address,
+				1,
+				1
+			]);
+			const tx = {
+				to: smartAddress,
+				value,
+				data: encodedData
+			};
+			const userOp = await this.smartAccount.buildUserOperation({ tx });
+			const walletNew = new Wallet(data.session_data.privateKey);
+			const signature = await walletNew.signMessage(getBytes(userOp.userOpHash));
+			const sessions = data.session_data.sessionKey.sessions;
+			const hash = await this.smartAccount.sendSignedUserOperation({
+				...userOp.userOp,
+				signature
+			}, {
+				targetSession: sessions[0],
+				sessions
+			});
+			return hash;
+		}
+		return undefined;
 	}
 }
