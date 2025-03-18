@@ -4,7 +4,6 @@ import GokiteNetwork from "@gokite-network/auth";
 import { createConfig } from "@particle-network/connectkit";
 import { aa } from "@particle-network/connectkit/aa";
 import { authWalletConnectors } from "@particle-network/connectkit/auth";
-import { baseSepolia } from "@particle-network/connectkit/chains";
 import {
   coinbaseWallet,
   evmWalletConnectors,
@@ -13,6 +12,7 @@ import {
   walletConnect,
 } from "@particle-network/connectkit/evm";
 import { wallet, EntryPosition } from "@particle-network/connectkit/wallet";
+import { kiteTestnet } from "./kite";
 
 //Retrived from https://dashboard.particle.network
 const projectId = process.env.NEXT_PUBLIC_PROJECT_ID as string;
@@ -30,13 +30,13 @@ export const envConfig = {
 };
 
 export const chainsMap: any = {
-  [baseSepolia.id]: baseSepolia,
+  [kiteTestnet.id]: kiteTestnet,
 };
 
 export const providerConfig = {
   ...envConfig,
-  chainName: baseSepolia.name.split(" ")[0],
-  chainId: baseSepolia.id,
+  chainName: kiteTestnet.name.split(" ")[0],
+  chainId: kiteTestnet.id,
   preload: false,
   wallet: {
     displayWalletEntry: true,
