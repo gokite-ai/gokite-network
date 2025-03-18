@@ -140,7 +140,7 @@ export default class GokiteNetwork {
       });
   }
 
-  public updateIdentify(data: IdentifyState) {
+  public updateIdentify(data: IdentifyState): void {
     try {
       localStorage.setItem(
         `pn_auth_user_session_${this.config.appId}`,
@@ -149,6 +149,7 @@ export default class GokiteNetwork {
     } catch (e) {
       console.error(e);
     }
+    this.deferred = new Deferred();
     this.deferred.resolve(data);
   }
 

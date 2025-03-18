@@ -80,6 +80,7 @@ export default class GokiteNetwork {
 		} catch (e) {
 			console.error(e);
 		}
+		this.deferred = new Deferred();
 		this.deferred.resolve(data);
 	}
 	set user(userInfo) {

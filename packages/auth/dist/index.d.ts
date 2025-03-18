@@ -38,7 +38,7 @@ export default class GokiteNetwork {
 			sessionKey: FeeQuotesResponse;
 		};
 	}): Promise<void>;
-	updateIdentify(data: IdentifyState);
+	updateIdentify(data: IdentifyState): void;
 	set user(userInfo: UserInfo | null);
 	get user(): UserInfo | null;
 	login(options?: LoginOptions): Promise<UserInfo | null>;
