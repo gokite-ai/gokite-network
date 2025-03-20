@@ -21,13 +21,13 @@ function bytesToHex(bytes: Uint8Array) {
 }
 
 export async function encrypt(text: string, key: string): Promise<string> {
-    const crypto = window.crypto || window.msCrypto;
+    const icrypto = window.crypto || window.msCrypto;
 
     // Convert the hex-encoded key string to a byte array
     const keyBytes = hexToBytes(key);
     
     // Import the encryption key using the Web Crypto API
-    const cryptoKey = await crypto.subtle.importKey(
+    const cryptoKey = await icrypto.subtle.importKey(
         "raw",                             // Algorithm type
         keyBytes,                          // Key data
         { name: "AES-GCM" },                // AES-GCM algorithm
@@ -36,14 +36,14 @@ export async function encrypt(text: string, key: string): Promise<string> {
     );
     
     // Generate a random nonce (12 bytes for AES-GCM)
-    const nonce = window.crypto.getRandomValues(new Uint8Array(12));
+    const nonce = icrypto.getRandomValues(new Uint8Array(12));
 
     // Encode the plaintext text into a byte array
     const encoder = new TextEncoder();
     const data = encoder.encode(text);
     
     // Perform the AES-GCM encryption
-    const ciphertext = await window.crypto.subtle.encrypt(
+    const ciphertext = await icrypto.subtle.encrypt(
         {
             name: "AES-GCM",
             iv: nonce,                       // Initialization vector (nonce)

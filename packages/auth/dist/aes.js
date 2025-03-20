@@ -14,13 +14,13 @@ function bytesToHex(bytes) {
 	return hex.join("");
 }
 export async function encrypt(text, key) {
-	const crypto = window.crypto || window.msCrypto;
+	const icrypto = window.crypto || window.msCrypto;
 	const keyBytes = hexToBytes(key);
-	const cryptoKey = await crypto.subtle.importKey("raw", keyBytes, { name: "AES-GCM" }, false, ["encrypt"]);
-	const nonce = window.crypto.getRandomValues(new Uint8Array(12));
+	const cryptoKey = await icrypto.subtle.importKey("raw", keyBytes, { name: "AES-GCM" }, false, ["encrypt"]);
+	const nonce = icrypto.getRandomValues(new Uint8Array(12));
 	const encoder = new TextEncoder();
 	const data = encoder.encode(text);
-	const ciphertext = await window.crypto.subtle.encrypt({
+	const ciphertext = await icrypto.subtle.encrypt({
 		name: "AES-GCM",
 		iv: nonce,
 		additionalData: new Uint8Array(),

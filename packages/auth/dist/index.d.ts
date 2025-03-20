@@ -1,6 +1,7 @@
 import type { Config, LoginOptions, UserInfo } from "@particle-network/auth";
 import { SmartAccount } from "@particle-network/aa";
 import type { FeeQuotesResponse } from "@particle-network/aa";
+import { Deferred } from "./deferred";
 export type { UserInfo } from "@particle-network/auth";
 interface IdentifyState {
 	access_token: string;
@@ -23,6 +24,7 @@ export default class GokiteNetwork {
 		version: string;
 	}, signInRpc?: string);
 	ensureSmartAccount(smartAccount?: SmartAccount): void;
+	isReady(): boolean;
 	ready(fn: (data: {
 		access_token: string;
 		session_data: {
@@ -38,7 +40,7 @@ export default class GokiteNetwork {
 			sessionKey: FeeQuotesResponse;
 		};
 	}): Promise<void>;
-	updateIdentify(data: IdentifyState): void;
+	updateIdentify(data: IdentifyState, deferred?: Deferred<IdentifyState>): void;
 	set user(userInfo: UserInfo | null);
 	get user(): UserInfo | null;
 	login(options?: LoginOptions): Promise<UserInfo | null>;

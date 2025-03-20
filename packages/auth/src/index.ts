@@ -95,6 +95,10 @@ export default class GokiteNetwork {
     }
   }
 
+  public isReady(): boolean {
+    return this.deferred.fullfilled
+  }
+  
   public ready(
     fn: (data: {
       access_token: string;
@@ -136,11 +140,11 @@ export default class GokiteNetwork {
         }
       })
       .then((ret: any) => {
-        this.updateIdentify(ret.data);
+        this.updateIdentify(ret.data, this.deferred);
       });
   }
 
-  public updateIdentify(data: IdentifyState): void {
+  public updateIdentify(data: IdentifyState, deferred?: Deferred<IdentifyState>): void {
     try {
       localStorage.setItem(
         `pn_auth_user_session_${this.config.appId}`,
@@ -149,7 +153,7 @@ export default class GokiteNetwork {
     } catch (e) {
       console.error(e);
     }
-    this.deferred = new Deferred();
+    this.deferred = deferred || new Deferred();
     this.deferred.resolve(data);
   }
 

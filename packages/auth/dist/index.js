@@ -51,6 +51,9 @@ export default class GokiteNetwork {
 			}
 		}
 	}
+	isReady() {
+		return this.deferred.fullfilled;
+	}
 	ready(fn) {
 		this.deferred.promise.then(fn);
 	}
@@ -71,16 +74,16 @@ export default class GokiteNetwork {
 				this.createSession();
 			}
 		}).then((ret) => {
-			this.updateIdentify(ret.data);
+			this.updateIdentify(ret.data, this.deferred);
 		});
 	}
-	updateIdentify(data) {
+	updateIdentify(data, deferred) {
 		try {
 			localStorage.setItem(`pn_auth_user_session_${this.config.appId}`, JSON.stringify(data));
 		} catch (e) {
 			console.error(e);
 		}
-		this.deferred = new Deferred();
+		this.deferred = deferred || new Deferred();
 		this.deferred.resolve(data);
 	}
 	set user(userInfo) {
