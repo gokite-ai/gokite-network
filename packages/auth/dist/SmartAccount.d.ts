@@ -18,7 +18,7 @@ export declare class SmartAccount {
 		secretKey: string;
 	});
 	getChainId(): number;
-	getWallet(): Wallet | null;
+	getWallet(): Wallet | null | undefined;
 	getAddress(): Promise<string>;
 	getNonce(key?: bigint): Promise<bigint>;
 }

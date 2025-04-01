@@ -18,7 +18,7 @@ export class SmartAccount {
 		return this.chain.id;
 	}
 	getWallet() {
-		return this.auth.getWallet();
+		return this.auth.getWallet() || this.auth.getUserInfo()?.wallets[0];
 	}
 	async getAddress() {
 		const owner = this.getWallet()?.public_address;

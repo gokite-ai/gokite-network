@@ -1,12 +1,5 @@
-import {
-  keccak256,
-  parseAbi,
-} from "viem";
-
-import { ParticleNetwork } from "@particle-network/auth";
 import type {
   Auth,
-  Config,
   LoginOptions,
   UserInfo,
 } from "@particle-network/auth";
@@ -23,8 +16,8 @@ export class GokiteNetwork {
   private deferred: Deferred<IdentifyState>;
 
   constructor(
-    private smartAccount: SmartAccount,
-    private auth: Auth,
+    public smartAccount: SmartAccount,
+    public auth: Auth,
     private signInRpc?: string
   ) {
     this.deferred = new Deferred();
@@ -51,8 +44,9 @@ export class GokiteNetwork {
     }
 
     try {
-      if (this.signInRpc) {
         const eoa = this.user?.wallets[0].public_address;
+      if (this.signInRpc) {
+        
         return fetch(this.signInRpc!, {
           method: "POST",
           mode: "cors",
@@ -87,8 +81,16 @@ export class GokiteNetwork {
           localStorage.getItem(this.getStorageKey()) || "null"
         );
 
-        if (data) {
+        if (data?.aa_address) {
           this.deferred.resolve(data);
+        } else {
+            const address = await this.smartAccount!.getAddress();
+
+            this.updateIdentify({
+                ...data,
+                eoa: eoa!,
+                aa_address: address,
+              }, this.deferred);
         }
         return data;
       }

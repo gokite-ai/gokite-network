@@ -1,3 +1,5 @@
+import { ParticleChains } from "@particle-network/chains";
+import { defineChain } from "@particle-network/connectkit/chains";
 export const gokiteTestnet = defineChain({
 	id: 2368,
 	name: "Gokite Testnet",
@@ -12,4 +14,12 @@ export const gokiteTestnet = defineChain({
 		url: "https://testnet.kitescan.ai"
 	} },
 	testnet: true
+});
+const testnetKey = `${gokiteTestnet.name.split(" ")[0].toLowerCase()}-${gokiteTestnet.id}`;
+Object.defineProperty(ParticleChains, testnetKey, {
+	get() {
+		return gokiteTestnet;
+	},
+	enumerable: true,
+	configurable: false
 });

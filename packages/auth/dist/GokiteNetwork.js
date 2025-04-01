@@ -22,8 +22,8 @@ export class GokiteNetwork {
 			return this.deferred.promise;
 		}
 		try {
+			const eoa = this.user?.wallets[0].public_address;
 			if (this.signInRpc) {
-				const eoa = this.user?.wallets[0].public_address;
 				return fetch(this.signInRpc, {
 					method: "POST",
 					mode: "cors",
@@ -49,8 +49,15 @@ export class GokiteNetwork {
 				});
 			} else {
 				const data = JSON.parse(localStorage.getItem(this.getStorageKey()) || "null");
-				if (data) {
+				if (data?.aa_address) {
 					this.deferred.resolve(data);
+				} else {
+					const address = await this.smartAccount.getAddress();
+					this.updateIdentify({
+						...data,
+						eoa,
+						aa_address: address
+					}, this.deferred);
 				}
 				return data;
 			}

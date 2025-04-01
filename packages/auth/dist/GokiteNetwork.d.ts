@@ -7,8 +7,8 @@ interface IdentifyState {
 	[K: string]: any;
 }
 export declare class GokiteNetwork {
-	private smartAccount;
-	private auth;
+	smartAccount: SmartAccount;
+	auth: Auth;
 	private signInRpc?;
 	private deferred;
 	constructor(smartAccount: SmartAccount, auth: Auth, signInRpc?: string);

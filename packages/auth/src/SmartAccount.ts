@@ -33,8 +33,8 @@ export class SmartAccount {
     return this.chain.id;
   }
 
-  public getWallet(): Wallet | null {
-    return this.auth.getWallet();
+  public getWallet(): Wallet | null | undefined {
+    return this.auth.getWallet() || this.auth.getUserInfo()?.wallets[0];
   }
 
   public async getAddress(): Promise<string> {
