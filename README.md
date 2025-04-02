@@ -17,3 +17,4 @@
 3. bun run dev
 
 npm publish --registry=https://registry.npmjs.org --access public
+https://r.cnpmjs.org/%40gokite-network%2Fauth?t=1743555302020&cache=0

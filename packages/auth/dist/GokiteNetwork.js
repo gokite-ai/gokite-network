@@ -23,6 +23,7 @@ export class GokiteNetwork {
 		}
 		try {
 			const eoa = this.user?.wallets[0].public_address;
+			const address = await this.smartAccount.getAddress();
 			if (this.signInRpc) {
 				return fetch(this.signInRpc, {
 					method: "POST",
@@ -37,20 +38,26 @@ export class GokiteNetwork {
 					if (res.ok) {
 						return res.json();
 					} else if (res.status === 422) {
-						const address = await this.smartAccount.getAddress();
-						return await this.signin({
+						return this.signin({
 							eoa,
 							aa_address: address
 						});
 					}
 				}).then((ret) => {
-					const odata = Object.assign(payload, ret.data ?? {});
-					this.updateIdentify(odata, this.deferred);
-					return odata;
+					if (ret.aa_address && ret.aa_address !== address) {
+						return this.signin({
+							eoa,
+							aa_address: address
+						});
+					} else {
+						payload.aa_address = address;
+						const odata = Object.assign(payload, ret.data ?? {});
+						this.updateIdentify(odata, this.deferred);
+						return odata;
+					}
 				});
 			} else {
 				const data = JSON.parse(localStorage.getItem(this.getStorageKey()) || "null");
-				const address = await this.smartAccount.getAddress();
 				const odata = {
 					eoa,
 					aa_address: address,
