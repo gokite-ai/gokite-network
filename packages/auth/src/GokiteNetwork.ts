@@ -1,8 +1,4 @@
-import type {
-  Auth,
-  LoginOptions,
-  UserInfo,
-} from "@particle-network/auth";
+import type { Auth, LoginOptions, UserInfo } from "@particle-network/auth";
 import { Deferred } from "./deferred";
 import { encrypt } from "./aes";
 import { SmartAccount } from "./SmartAccount";
@@ -10,6 +6,10 @@ export type { UserInfo } from "@particle-network/auth";
 
 interface IdentifyState {
   access_token: string;
+  oea?: string;
+  aa_address?: string;
+  displayed_name?: string;
+  avatar_url?: string;
   [K: string]: any;
 }
 export class GokiteNetwork {
@@ -38,15 +38,16 @@ export class GokiteNetwork {
   public async signin(payload: {
     eoa: string;
     aa_address?: string;
+    user_name?: string;
+    avatar_url?: string;
   }): Promise<IdentifyState | undefined> {
     if (this.deferred.fullfilled) {
       return this.deferred.promise;
     }
 
     try {
-        const eoa = this.user?.wallets[0].public_address;
+      const eoa = this.user?.wallets[0].public_address;
       if (this.signInRpc) {
-        
         return fetch(this.signInRpc!, {
           method: "POST",
           mode: "cors",
@@ -73,26 +74,29 @@ export class GokiteNetwork {
             }
           })
           .then((ret: any) => {
-            this.updateIdentify(ret.data, this.deferred);
-            return ret.data;
+            const odata = Object.assign(payload, ret.data ?? {})
+            this.updateIdentify(odata, this.deferred);
+            return odata;
           });
       } else {
         const data = JSON.parse(
           localStorage.getItem(this.getStorageKey()) || "null"
         );
-
-        if (data?.aa_address) {
-          this.deferred.resolve(data);
-        } else {
-            const address = await this.smartAccount!.getAddress();
-
-            this.updateIdentify({
-                ...data,
-                eoa: eoa!,
-                aa_address: address,
-              }, this.deferred);
+        const address = await this.smartAccount!.getAddress();
+        const odata = {
+          eoa: eoa!,
+          aa_address: address,
+          ...data,
         }
-        return data;
+        if (data?.aa_address) {
+          this.deferred.resolve(odata);
+        } else {
+          this.updateIdentify(
+            odata,
+            this.deferred
+          );
+        }
+        return odata;
       }
     } catch (e) {
       console.error(e);

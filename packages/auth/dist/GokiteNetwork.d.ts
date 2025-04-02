@@ -4,6 +4,10 @@ import { SmartAccount } from "./SmartAccount";
 export type { UserInfo } from "@particle-network/auth";
 interface IdentifyState {
 	access_token: string;
+	oea?: string;
+	aa_address?: string;
+	displayed_name?: string;
+	avatar_url?: string;
 	[K: string]: any;
 }
 export declare class GokiteNetwork {
@@ -18,6 +22,8 @@ export declare class GokiteNetwork {
 	signin(payload: {
 		eoa: string;
 		aa_address?: string;
+		user_name?: string;
+		avatar_url?: string;
 	}): Promise<IdentifyState | undefined>;
 	updateIdentify(data: IdentifyState, deferred?: Deferred<IdentifyState>): void;
 	set user(userInfo: UserInfo | null);

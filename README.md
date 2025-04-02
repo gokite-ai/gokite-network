@@ -15,3 +15,5 @@
 1. bun install
 2. cd apps/auth-demo
 3. bun run dev
+
+npm publish --registry=https://registry.npmjs.org --access public

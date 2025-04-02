@@ -44,22 +44,24 @@ export class GokiteNetwork {
 						});
 					}
 				}).then((ret) => {
-					this.updateIdentify(ret.data, this.deferred);
-					return ret.data;
+					const odata = Object.assign(payload, ret.data ?? {});
+					this.updateIdentify(odata, this.deferred);
+					return odata;
 				});
 			} else {
 				const data = JSON.parse(localStorage.getItem(this.getStorageKey()) || "null");
+				const address = await this.smartAccount.getAddress();
+				const odata = {
+					eoa,
+					aa_address: address,
+					...data
+				};
 				if (data?.aa_address) {
-					this.deferred.resolve(data);
+					this.deferred.resolve(odata);
 				} else {
-					const address = await this.smartAccount.getAddress();
-					this.updateIdentify({
-						...data,
-						eoa,
-						aa_address: address
-					}, this.deferred);
+					this.updateIdentify(odata, this.deferred);
 				}
-				return data;
+				return odata;
 			}
 		} catch (e) {
 			console.error(e);
