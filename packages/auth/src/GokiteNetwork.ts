@@ -38,7 +38,7 @@ export class GokiteNetwork {
   public async signin(payload: {
     eoa: string;
     aa_address?: string;
-    user_name?: string;
+    displayed_name?: string;
     avatar_url?: string;
   }): Promise<IdentifyState | undefined> {
     if (this.deferred.fullfilled) {
