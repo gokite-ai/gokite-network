@@ -49,6 +49,7 @@ export class GokiteNetwork {
       const eoa = this.user?.wallets[0].public_address;
       const address = await this.smartAccount!.getAddress();
       if (this.signInRpc) {
+        
         return fetch(this.signInRpc!, {
           method: "POST",
           mode: "cors",

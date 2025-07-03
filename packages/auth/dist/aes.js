@@ -31,3 +31,22 @@ export async function encrypt(text, key) {
 	combined.set(new Uint8Array(ciphertext), nonce.byteLength);
 	return bytesToHex(combined);
 }
+export async function decrypt(encryptedHex, key) {
+	const icrypto = window.crypto || window.msCrypto;
+	try {
+		const encryptedBytes = hexToBytes(encryptedHex);
+		const nonce = encryptedBytes.slice(0, 12);
+		const ciphertext = encryptedBytes.slice(12);
+		const cryptoKey = await icrypto.subtle.importKey("raw", hexToBytes(key), { name: "AES-GCM" }, false, ["decrypt"]);
+		const decryptedData = await icrypto.subtle.decrypt({
+			name: "AES-GCM",
+			iv: nonce,
+			additionalData: new Uint8Array(),
+			tagLength: 128
+		}, cryptoKey, ciphertext);
+		const decoder = new TextDecoder();
+		return decoder.decode(decryptedData);
+	} catch (error) {
+		throw new Error(`Decryption failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+	}
+}

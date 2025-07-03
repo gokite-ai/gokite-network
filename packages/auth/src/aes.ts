@@ -62,3 +62,45 @@ export async function encrypt(text: string, key: string): Promise<string> {
     // Convert the combined result to a hex string for easy transmission
     return bytesToHex(combined)
 }
+
+// Convert a hex to a string
+export async function decrypt(encryptedHex: string, key: string): Promise<string> {
+  const icrypto = window.crypto || window.msCrypto;
+
+  try {
+    // 1. Convert hexadecimal ciphertext to byte array
+    const encryptedBytes = hexToBytes(encryptedHex);
+
+    // 2. Separate nonce (first 12 bytes) and ciphertext (remaining bytes)
+    const nonce = encryptedBytes.slice(0, 12);
+    const ciphertext = encryptedBytes.slice(12);
+
+    // 3. Import decryption key
+    const cryptoKey = await icrypto.subtle.importKey(
+      "raw",
+      hexToBytes(key),
+      { name: "AES-GCM" },
+      false,
+      ["decrypt"]  // 注意这里是 decrypt
+    );
+
+    // 4. Execute AES-GCM decryption
+    const decryptedData = await icrypto.subtle.decrypt(
+      {
+        name: "AES-GCM",
+        iv: nonce,
+        additionalData: new Uint8Array(),
+        tagLength: 128
+      },
+      cryptoKey,
+      ciphertext
+    );
+
+    // 5. Convert the decrypted byte array into a string
+    const decoder = new TextDecoder();
+    return decoder.decode(decryptedData);
+
+  } catch (error) {
+    throw new Error(`Decryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
