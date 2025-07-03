@@ -1,6 +1,6 @@
 {
   "name": "@gokite-network/auth",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "gokite network auth",
   "homepage": "https://github.com/gokite-ai/gokite-network",
   "author": {
@@ -16,7 +16,8 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
-    }
+    },
+    "./dist/aes.js": "./dist/aes.js"
   },
   "files": ["dist", "CHANGELOG.md", "README.md"],
   "type": "module",
